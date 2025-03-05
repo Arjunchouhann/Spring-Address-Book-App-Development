@@ -1,8 +1,10 @@
 package com.bridgelabz.springaddressbook.controller;
 
+
 import com.bridgelabz.springaddressbook.dto.ContactDTO;
 import com.bridgelabz.springaddressbook.model.Contact;
 import com.bridgelabz.springaddressbook.repository.ContactRepository;
+import com.bridgelabz.springaddressbook.service.ContactService;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 
@@ -13,14 +15,17 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+
 @RestController
 @RequestMapping("/api/contacts")
 public class ContactController {
 
     private final ContactRepository contactRepository;
+    private final ContactService contactService;
 
-    public ContactController(ContactRepository contactRepository) {
+    public ContactController(ContactRepository contactRepository, ContactService contactService) {
         this.contactRepository = contactRepository;
+        this.contactService = contactService;
     }
 
     private ContactDTO convertToDTO(Contact contact) {
@@ -35,8 +40,7 @@ public class ContactController {
     @GetMapping("/{id}")
     public ResponseEntity<Contact> getContactById(@PathVariable Long id) {
         Optional<Contact> contact = contactRepository.findById(id);
-        return contact.map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+        return contact.map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping
@@ -46,72 +50,51 @@ public class ContactController {
 
     @PutMapping("/{id}")
     public ResponseEntity<Contact> updateContact(@PathVariable Long id, @RequestBody Contact updatedContact) {
-        return contactRepository.findById(id)
-                .map(contact -> {
-                    contact.setName(updatedContact.getName());
-                    contact.setEmail(updatedContact.getEmail());
-                    contact.setPhone(updatedContact.getPhone());
-                    return ResponseEntity.ok(contactRepository.save(contact));
-                })
-                .orElse(ResponseEntity.notFound().build());
+        return contactRepository.findById(id).map(contact -> {
+            contact.setName(updatedContact.getName());
+            contact.setEmail(updatedContact.getEmail());
+            contact.setPhone(updatedContact.getPhone());
+            return ResponseEntity.ok(contactRepository.save(contact));
+        }).orElse(ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Object> deleteContact(@PathVariable Long id) {
-        return contactRepository.findById(id)
-                .map(contact -> {
-                    contactRepository.delete(contact);
-                    return ResponseEntity.noContent().build();
-                })
-                .orElse(ResponseEntity.notFound().build());
+        return contactRepository.findById(id).map(contact -> {
+            contactRepository.delete(contact);
+            return ResponseEntity.noContent().build();
+        }).orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping("/dto")
     public ResponseEntity<List<ContactDTO>> getAllContactsDto() {
-        List<ContactDTO> contacts = contactRepository.findAll()
-                .stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
-        return ResponseEntity.ok(contacts);
+        return ResponseEntity.ok(contactService.getAllContacts());
     }
 
 
     @GetMapping("/dto/{id}")
     public ResponseEntity<ContactDTO> getContactByIdDto(@PathVariable Long id) {
-        Optional<Contact> contact = contactRepository.findById(id);
-        return contact.map(value -> ResponseEntity.ok(convertToDTO(value)))
-                .orElse(ResponseEntity.notFound().build());
+        Optional<ContactDTO> contactDTO = contactService.getContactById(id);
+        return contactDTO.map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
     }
 
 
     @PostMapping("/dto")
     public ResponseEntity<ContactDTO> createContactDto(@RequestBody ContactDTO contactDTO) {
-        Contact contact = new Contact(null, contactDTO.getName(), contactDTO.getEmail(), contactDTO.getPhone());
-        Contact savedContact = contactRepository.save(contact);
-        return ResponseEntity.ok(convertToDTO(savedContact));
+        return ResponseEntity.ok(contactService.createContact(contactDTO));
     }
 
 
     @PutMapping("/dto/{id}")
     public ResponseEntity<ContactDTO> updateContactDto(@PathVariable Long id, @RequestBody ContactDTO contactDTO) {
-        return contactRepository.findById(id)
-                .map(contact -> {
-                    contact.setName(contactDTO.getName());
-                    contact.setEmail(contactDTO.getEmail());
-                    contact.setPhone(contactDTO.getPhone());
-                    Contact updatedContact = contactRepository.save(contact);
-                    return ResponseEntity.ok(convertToDTO(updatedContact));
-                })
-                .orElse(ResponseEntity.notFound().build());
+        Optional<ContactDTO> updatedContact = contactService.updateContact(id, contactDTO);
+        return updatedContact.map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/dto/{id}")
     public ResponseEntity<Object> deleteContactDto(@PathVariable Long id) {
-        return contactRepository.findById(id)
-                .map(contact -> {
-                    contactRepository.delete(contact);
-                    return ResponseEntity.noContent().build();
-                })
-                .orElse(ResponseEntity.notFound().build());
+        return contactService.deleteContact(id) ? ResponseEntity.noContent().build() : ResponseEntity.notFound().build();
     }
+
+
 }
