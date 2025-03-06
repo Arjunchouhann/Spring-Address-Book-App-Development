@@ -1,11 +1,14 @@
 package com.bridgelabz.springaddressbook.dto;
+
 import lombok.*;
 
-@Data
-@NoArgsConstructor
 @AllArgsConstructor
-public class ContactDTO {
+@NoArgsConstructor
+@Getter
+@Setter
+public @Data class AddressBookDTO {
     private String name;
+    private String phoneNo;
     private String email;
-    private String phone;
+    private String address;
 }
